@@ -11,10 +11,10 @@
 struct registers {
 	union {
 		struct {
-			unsigned char a;
-			unsigned char b;
+			unsigned char r0;
+			unsigned char r1;
 		};
-		unsigned short ab;
+		unsigned short r01;
 	};
 };
 
@@ -30,18 +30,22 @@ int main(int argc, char *argv[]) {
 
 	// test code, please ignore
 	struct registers registers;
-	registers.ab = 0;
-	registers.b = 6;
-	registers.a = atoi(argv[1]);
+	registers.r01 = 0;
+	registers.r1 = 6;
+	registers.r0 = atoi(argv[1]);
         //open file
 
-	while(registers.a > 0) { 
+	while(registers.r0 > 0) { 
 		/*read next line and run it*/ 
-		registers.a = registers.a - 1;
-		printf("%d\n", registers.ab);
+		registers.r0 = registers.r0 - 1;
+		printf("%d\n", registers.01);
 	}
 	
 	//Free memory and close file
 	
 	return 0;
+}
+
+void NOP(void) {
+	return;
 }
