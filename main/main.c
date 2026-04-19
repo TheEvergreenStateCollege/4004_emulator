@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 
 /* TODO
  * Open file and error check
@@ -7,8 +8,11 @@
  * Functions for instructions
  * Add remaining registers
 */
-
-struct registers {
+typedef unsigned _BitInt(4) uint4_t;
+typedef struct i4004_flags {
+	 uint8_t chip_select;
+} i4004_flags;
+typedef struct i4004_registers {
 	union {
 		struct {
 			unsigned char r0;
@@ -16,7 +20,12 @@ struct registers {
 		};
 		unsigned short r01;
 	};
-};
+} i4004_registers;
+
+i4004_flags flags;
+i4004_registers registers;
+uint8_t i4001[256];
+uint4_t i4002[20];
 
 void NOP(void);
 
@@ -25,24 +34,23 @@ int main(int argc, char *argv[]) {
 		printf("Usage is %s <filename> where <filename> is the desired 4004 program.\n", argv[0]);
 		return 1;
 	}
-
 	
-
-	// test code, please ignore
-	struct registers registers;
-	registers.r01 = 0;
-	registers.r1 = 6;
-	registers.r0 = atoi(argv[1]);
         //open file
+	FILE *file = fopen(argv[1], "r");
+	if(!file) {
+		printf("%s is not a valid file.\n", argv[1]);
+		exit(1);
+	}
 
-	while(registers.r0 > 0) { 
-		/*read next line and run it*/ 
-		registers.r0 = registers.r0 - 1;
-		printf("%d\n", registers.01);
+	uint8_t WORD;
+	int i = 0;
+	while((WORD = (uint8_t) fgetc(file)) != EOF) { 
+		i4001[i] = WORD;
+		++i;
 	}
 	
 	//Free memory and close file
-	
+	free(file);
 	return 0;
 }
 
