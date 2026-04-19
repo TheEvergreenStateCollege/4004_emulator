@@ -4,6 +4,7 @@
 
 /* TODO
  * Open file and error check
+ *	Make the file read always add 256 values to the ROM with it adding 0's after the file is over
  * Main loop to progress through program
  * Functions for instructions
  * Add remaining registers
