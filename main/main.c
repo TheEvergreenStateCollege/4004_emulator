@@ -47,9 +47,14 @@ int main(int argc, char *argv[]) {
 	int i = 0;
 	while(i < 256) { 
 		i4001[i] = 0;
-		//i4001[i] = WORD;
+		WORD = (uint8_t) fgetc(file);
+		i4001[i] = WORD;
 		// (WORD = (uint8_t) fgetc(file)) 
 		++i;
+	}
+
+	for(i = 0; i < 256; ++i) {
+		printf("%d\n", (int) i4001[i]);
 	}
 	
 	//Free memory and close file
@@ -57,10 +62,9 @@ int main(int argc, char *argv[]) {
 	return 0;
 }
 
-void insertInRegister(uint8_t value, uint8_t reg) {
+void insertInRegister(uint4_t value, uint8_t reg) {
 	switch (reg) {
 		case 0:
-			
 		case 1:
 		case 2:
 		case 3:
