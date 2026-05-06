@@ -34,6 +34,7 @@ uint4_t fetchFromRegister(int reg);
 //Instruction function prototypes
 void NOP(void);
 void IAC(void);
+void JUN(void);
 
 int main(int argc, char *argv[]) {
 	if(argc != 2) {
