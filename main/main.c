@@ -13,7 +13,8 @@
 typedef unsigned _BitInt(4) uint4_t;
 typedef unsigned _BitInt(12) uint12_t;
 typedef struct i4004_flags {
-	 uint8_t chip_select;
+	uint8_t chip_select;
+	uint8_t cb;
 } i4004_flags_t;
 typedef struct i4004_registers {
 	uint8_t r01, r23, r45, r67, r89, r1011, r1213, r1415;
@@ -35,6 +36,9 @@ uint4_t fetchFromRegister(int reg);
 void NOP(void);
 void IAC(void);
 void JUN(void);
+void CLB(void);
+void CLC(void);
+void DAC(void);
 
 int main(int argc, char *argv[]) {
 	if(argc != 2) {
@@ -112,10 +116,11 @@ int main(int argc, char *argv[]) {
 			case 0x0: NOP(); registers.pc += 1; break;
 			case 0xF:
 				switch (opa) {
-					case 0x0: break;
-					case 0x1: break;
+					case 0x0: CLB(); registers.pc += 1; break;
+					case 0x1: CLC(); registers.pc += 1; break;
 					case 0x2: IAC(); registers.pc += 1; break;
 					case 0x3: break;
+					case 0x8: DAC(); registers.pc += 1; break;
 				} break;
 			case 0x4: JUN(); break;
 		}
@@ -186,5 +191,21 @@ void IAC(void) {
 
 void JUN(void) {
 	registers.pc = i4001[registers.pc+1];
+	return;
+}
+
+void CLB(void) {
+	flags.cb = 0;
+	registers.ac = 0;
+	return;
+}
+
+void CLC(void) {
+	flags.cb = 0;
+	return;
+}
+
+void DAC(void) {
+	registers.ac -= 1;
 	return;
 }
