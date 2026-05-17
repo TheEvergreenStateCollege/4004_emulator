@@ -3,9 +3,6 @@
 #include <stdint.h>
 
 /* TODO
- * Open file and error check
- *	Make the file read always add 256 values to the ROM with it adding 0's after the file is over
- * Main loop to progress through program
  * Functions for instructions
  * Add remaining registers
 */
@@ -34,15 +31,26 @@ uint4_t fetchFromRegister(int reg);
 
 //Instruction function prototypes
 void NOP(void);
-void IAC(void);
 void JUN(void);
+
+// F Instructions
 void CLB(void);
 void CLC(void);
+void IAC(void);
+void CMC(void);
+void CMA(void);
+void RAL(void);
+void RAR(void);
+void TCC(void);
 void DAC(void);
+void TCS(void);
+void STC(void);
+void KBP(void);
+void DCL(void);
 
 int main(int argc, char *argv[]) {
-	if(argc != 2) {
-		printf("Usage is %s <filename> where <filename> is the desired 4004 program.\n", argv[0]);
+	if(argc != 3) {
+		printf("Usage is %s <filename> <num> where <filename> is the desired 4004 program and <num> is the number of cycles the emulator should run before halting.\n", argv[0]);
 		return 1;
 	}
 
@@ -108,7 +116,7 @@ int main(int argc, char *argv[]) {
 	uint8_t instruction;
 	uint4_t opr, opa;
 	
-	while(i < 1000) {
+	while(i < atoi(argv[2])) {
 		instruction = i4001[registers.pc];
 		opr = (instruction & 0xF0) >> 4;
 		opa = (instruction & 0x0F);
@@ -119,8 +127,17 @@ int main(int argc, char *argv[]) {
 					case 0x0: CLB(); registers.pc += 1; break;
 					case 0x1: CLC(); registers.pc += 1; break;
 					case 0x2: IAC(); registers.pc += 1; break;
-					case 0x3: break;
+					case 0x3: CMC(); registers.pc += 1; break;
+					case 0x4: CMA(); registers.pc += 1; break;
+					case 0x5: RAL(); registers.pc += 1; break;
+					case 0x6: RAR(); registers.pc += 1; break;
+					case 0x7: TCC(); registers.pc += 1; break;
 					case 0x8: DAC(); registers.pc += 1; break;
+					case 0x9: TCS(); registers.pc += 1; break;
+					case 0xA: STC(); registers.pc += 1; break;
+					case 0xB: DAA(); registers.pc += 1; break;
+					case 0xC: KBP(); registers.pc += 1; break;
+					case 0xD: DCL(); registers.pc += 1; break;
 				} break;
 			case 0x4: JUN(); break;
 		}
@@ -131,31 +148,32 @@ int main(int argc, char *argv[]) {
 	printf("accumulator = %d, pc = %d\n", (int) registers.ac, (int) registers.pc);
 	return 0;
 }
-/*
+
 void insertInRegister(uint4_t value, uint8_t reg) {
+	uint8_t lr = 0;
+	uint8_t ur = 0;
 	switch (reg) {
-		case 0:
-		case 1:
-		case 2:
-		case 3:
-		case 4:
-		case 5:
-		case 6:
-		case 7:
-		case 8:
-		case 9:
-		case 10:
-		case 11:
-		case 12:
-		case 13:
-		case 14:
-		case 15:
-		default:
+		case 0: lr = (registers.01 & 0x0F); ur = (uint8_t) value; ur = (g << 4); registers.01 = (ur | lr);
+		case 1: lr = ((uint8_t) value) & 0x0F; ur = registers.01 & 0xF0; registers.01 = (ur | lr);
+		case 2: lr = (registers.23 & 0x0F); ur = (uint8_t) value; ur = (g << 4); registers.23 = (ur | lr);
+		case 3: lr = ((uint8_t) value) & 0x0F; ur = registers.23 & 0xF0; registers.23 = (ur | lr);
+		case 4: lr = (registers.45 & 0x0F); ur = (uint8_t) value; ur = (g << 4); registers.45 = (ur | lr);
+		case 5: lr = ((uint8_t) value) & 0x0F; ur = registers.45 & 0xF0; registers.45 = (ur | lr);
+		case 6: lr = (registers.67 & 0x0F); ur = (uint8_t) value; ur = (g << 4); registers.67 = (ur | lr);
+		case 7: lr = ((uint8_t) value) & 0x0F; ur = registers.67 & 0xF0; registers.67 = (ur | lr);
+		case 8: lr = (registers.89 & 0x0F); ur = (uint8_t) value; ur = (g << 4); registers.89 = (ur | lr);
+		case 9: lr = ((uint8_t) value) & 0x0F; ur = registers.89 & 0xF0; registers.89 = (ur | lr);
+		case 10: lr = (registers.1011 & 0x0F); ur = (uint8_t) value; ur = (g << 4); registers.1011 = (ur | lr);
+		case 11: lr = ((uint8_t) value) & 0x0F; ur = registers.1011 & 0xF0; registers.1011 = (ur | lr);
+		case 12: lr = (registers.1213 & 0x0F); ur = (uint8_t) value; ur = (g << 4); registers.1213 = (ur | lr);
+		case 13: lr = ((uint8_t) value) & 0x0F; ur = registers.1213 & 0xF0; registers.1213 = (ur | lr);
+		case 14: lr = (registers.1415 & 0x0F); ur = (uint8_t) value; ur = (g << 4); registers.1415 = (ur | lr);
+		case 15: lr = ((uint8_t) value) & 0x0F; ur = registers.1415 & 0xF0; registers.1415 = (ur | lr);
 	}
 
 	return;
 }
-*/
+
 uint4_t fetchFromRegister(int reg) {
 	uint4_t value = 0;
 	printf("%d\n", reg);
