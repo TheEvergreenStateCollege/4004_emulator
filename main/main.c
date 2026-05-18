@@ -20,6 +20,7 @@ typedef struct i4004_registers {
 	uint4_t ac;
 } i4004_registers_t;
 
+uint8_t stack_level;
 i4004_flags_t flags;
 i4004_registers_t registers;
 uint8_t i4001[256];
@@ -31,9 +32,10 @@ uint4_t fetchFromRegister(int reg);
 
 //Instruction function prototypes
 void NOP(void);
+// Control flow instruction prototypes
 void JUN(void);
 
-// F Instructions
+// Fx instruction prototypes
 void CLB(void);
 void CLC(void);
 void IAC(void);
@@ -45,6 +47,7 @@ void TCC(void);
 void DAC(void);
 void TCS(void);
 void STC(void);
+void DAA(void);
 void KBP(void);
 void DCL(void);
 
@@ -122,6 +125,7 @@ int main(int argc, char *argv[]) {
 		opa = (instruction & 0x0F);
 		switch (opr) {
 			case 0x0: NOP(); registers.pc += 1; break;
+			case 0x4: JUN(); break;
 			case 0xF:
 				switch (opa) {
 					case 0x0: CLB(); registers.pc += 1; break;
@@ -139,7 +143,6 @@ int main(int argc, char *argv[]) {
 					case 0xC: KBP(); registers.pc += 1; break;
 					case 0xD: DCL(); registers.pc += 1; break;
 				} break;
-			case 0x4: JUN(); break;
 		}
 		++i;
 	}
@@ -149,6 +152,7 @@ int main(int argc, char *argv[]) {
 	return 0;
 }
 
+/*
 void insertInRegister(uint4_t value, uint8_t reg) {
 	uint8_t lr = 0;
 	uint8_t ur = 0;
@@ -173,7 +177,7 @@ void insertInRegister(uint4_t value, uint8_t reg) {
 
 	return;
 }
-
+*/
 uint4_t fetchFromRegister(int reg) {
 	uint4_t value = 0;
 	printf("%d\n", reg);
@@ -198,32 +202,53 @@ uint4_t fetchFromRegister(int reg) {
 	return value;
 }
 
-void NOP(void) {
-	return;
-}
-
-void IAC(void) {
-	registers.ac += 1;
-	return;
-}
-
+void NOP(void) { return; }
+// Control flow instruction definitions
 void JUN(void) {
 	registers.pc = i4001[registers.pc+1];
 	return;
 }
 
+// Fx instruction definitions
 void CLB(void) {
 	flags.cb = 0;
 	registers.ac = 0;
 	return;
 }
-
 void CLC(void) {
 	flags.cb = 0;
 	return;
 }
+void IAC(void) {
+	registers.ac += 1;
+	return;
+}
+void CMC(void) {
+	if (flags.cb == 0) {flags.cb = 1;}
+	else {flags.cb = 0;}
+	return;
+}
 
+void CMA(void) {
+	registers.ac = ~(registers.ac);
+	return;
+}
+void RAL(void) { return; }
+void RAR(void) { return; }
+void TCC(void) {
+	registers.ac = (uint4_t) flags.cb;
+	flags.cb = 0;
+	return;
+}
 void DAC(void) {
 	registers.ac -= 1;
 	return;
 }
+void TCS(void) { return; }
+void STC(void) {
+	flags.cb = 1;
+	return;
+}
+void DAA(void) { return; }
+void KBP(void) { return; }
+void DCL(void) { return; }
