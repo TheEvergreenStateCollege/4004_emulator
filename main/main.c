@@ -152,32 +152,32 @@ int main(int argc, char *argv[]) {
 	return 0;
 }
 
-/*
+
 void insertInRegister(uint4_t value, uint8_t reg) {
 	uint8_t lr = 0;
 	uint8_t ur = 0;
 	switch (reg) {
-		case 0: lr = (registers.01 & 0x0F); ur = (uint8_t) value; ur = (g << 4); registers.01 = (ur | lr);
-		case 1: lr = ((uint8_t) value) & 0x0F; ur = registers.01 & 0xF0; registers.01 = (ur | lr);
-		case 2: lr = (registers.23 & 0x0F); ur = (uint8_t) value; ur = (g << 4); registers.23 = (ur | lr);
-		case 3: lr = ((uint8_t) value) & 0x0F; ur = registers.23 & 0xF0; registers.23 = (ur | lr);
-		case 4: lr = (registers.45 & 0x0F); ur = (uint8_t) value; ur = (g << 4); registers.45 = (ur | lr);
-		case 5: lr = ((uint8_t) value) & 0x0F; ur = registers.45 & 0xF0; registers.45 = (ur | lr);
-		case 6: lr = (registers.67 & 0x0F); ur = (uint8_t) value; ur = (g << 4); registers.67 = (ur | lr);
-		case 7: lr = ((uint8_t) value) & 0x0F; ur = registers.67 & 0xF0; registers.67 = (ur | lr);
-		case 8: lr = (registers.89 & 0x0F); ur = (uint8_t) value; ur = (g << 4); registers.89 = (ur | lr);
-		case 9: lr = ((uint8_t) value) & 0x0F; ur = registers.89 & 0xF0; registers.89 = (ur | lr);
-		case 10: lr = (registers.1011 & 0x0F); ur = (uint8_t) value; ur = (g << 4); registers.1011 = (ur | lr);
-		case 11: lr = ((uint8_t) value) & 0x0F; ur = registers.1011 & 0xF0; registers.1011 = (ur | lr);
-		case 12: lr = (registers.1213 & 0x0F); ur = (uint8_t) value; ur = (g << 4); registers.1213 = (ur | lr);
-		case 13: lr = ((uint8_t) value) & 0x0F; ur = registers.1213 & 0xF0; registers.1213 = (ur | lr);
-		case 14: lr = (registers.1415 & 0x0F); ur = (uint8_t) value; ur = (g << 4); registers.1415 = (ur | lr);
-		case 15: lr = ((uint8_t) value) & 0x0F; ur = registers.1415 & 0xF0; registers.1415 = (ur | lr);
+		case 0: lr = (registers.r01 & 0x0F); ur = (uint8_t) value; ur = (((uint8_t) value) << 4); registers.r01 = (ur | lr);
+		case 1: lr = ((uint8_t) value) & 0x0F; ur = registers.r01 & 0xF0; registers.r01 = (ur | lr);
+		case 2: lr = (registers.r23 & 0x0F); ur = (uint8_t) value; ur = (((uint8_t) value) << 4); registers.r23 = (ur | lr);
+		case 3: lr = ((uint8_t) value) & 0x0F; ur = registers.r23 & 0xF0; registers.r23 = (ur | lr);
+		case 4: lr = (registers.r45 & 0x0F); ur = (uint8_t) value; ur = (((uint8_t) value) << 4); registers.r45 = (ur | lr);
+		case 5: lr = ((uint8_t) value) & 0x0F; ur = registers.r45 & 0xF0; registers.r45 = (ur | lr);
+		case 6: lr = (registers.r67 & 0x0F); ur = (uint8_t) value; ur = (((uint8_t) value) << 4); registers.r67 = (ur | lr);
+		case 7: lr = ((uint8_t) value) & 0x0F; ur = registers.r67 & 0xF0; registers.r67 = (ur | lr);
+		case 8: lr = (registers.r89 & 0x0F); ur = (uint8_t) value; ur = (((uint8_t) value) << 4); registers.r89 = (ur | lr);
+		case 9: lr = ((uint8_t) value) & 0x0F; ur = registers.r89 & 0xF0; registers.r89 = (ur | lr);
+		case 10: lr = (registers.r1011 & 0x0F); ur = (uint8_t) value; ur = (((uint8_t) value) << 4); registers.r1011 = (ur | lr);
+		case 11: lr = ((uint8_t) value) & 0x0F; ur = registers.r1011 & 0xF0; registers.r1011 = (ur | lr);
+		case 12: lr = (registers.r1213 & 0x0F); ur = (uint8_t) value; ur = (((uint8_t) value) << 4); registers.r1213 = (ur | lr);
+		case 13: lr = ((uint8_t) value) & 0x0F; ur = registers.r1213 & 0xF0; registers.r1213 = (ur | lr);
+		case 14: lr = (registers.r1415 & 0x0F); ur = (uint8_t) value; ur = (((uint8_t) value) << 4); registers.r1415 = (ur | lr);
+		case 15: lr = ((uint8_t) value) & 0x0F; ur = registers.r1415 & 0xF0; registers.r1415 = (ur | lr);
 	}
 
 	return;
 }
-*/
+
 uint4_t fetchFromRegister(int reg) {
 	uint4_t value = 0;
 	printf("%d\n", reg);
@@ -228,7 +228,6 @@ void CMC(void) {
 	else {flags.cb = 0;}
 	return;
 }
-
 void CMA(void) {
 	registers.ac = ~(registers.ac);
 	return;
