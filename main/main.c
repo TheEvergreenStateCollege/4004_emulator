@@ -10,7 +10,6 @@
 typedef unsigned _BitInt(4) uint4_t;
 typedef unsigned _BitInt(12) uint12_t;
 typedef struct i4004_flags {
-	uint8_t chip_select;
 	uint8_t cb;
 } i4004_flags_t;
 typedef struct i4004_registers {
@@ -29,11 +28,17 @@ uint4_t i4002[20];
 //Memory operation function prototypes
 void insertInRegister(uint4_t value, uint8_t reg);
 uint4_t fetchFromRegister(int reg);
+uint8_t fetchDouble(int reg);
 
 //Instruction function prototypes
 void NOP(void);
 // Control flow instruction prototypes
+void JCN(uint4_t condition);
+void JIN(uint4_t j_reg);
 void JUN(void);
+void JMS(void);
+
+// ROM and RAM instruction prototypes
 
 // Fx instruction prototypes
 void CLB(void);
@@ -107,10 +112,12 @@ int main(int argc, char *argv[]) {
 		i4001[j] = buf;
 		j++;
 	}
-
+	
+	FILE *mem_fp = fopen("4004.memory", "w+");
 	for(j = 0; j < 256; j++) {
-		printf("%x ", (int) i4001[j]);
+		fprintf(mem_fp, "%x ", (int) i4001[j]);
 	}
+	fclose(mem_fp);
 	
 
 	// Start of the Actual Emulator
@@ -119,12 +126,14 @@ int main(int argc, char *argv[]) {
 	uint8_t instruction;
 	uint4_t opr, opa;
 	
+	FILE *reg_fp = fopen("4004.regtrace", "w+");
 	while(i < atoi(argv[2])) {
 		instruction = i4001[registers.pc];
 		opr = (instruction & 0xF0) >> 4;
 		opa = (instruction & 0x0F);
 		switch (opr) {
 			case 0x0: NOP(); registers.pc += 1; break;
+			case 0x3: JIN(opa); break;
 			case 0x4: JUN(); break;
 			case 0xF:
 				switch (opa) {
@@ -144,11 +153,12 @@ int main(int argc, char *argv[]) {
 					case 0xD: DCL(); registers.pc += 1; break;
 				} break;
 		}
+		fprintf(reg_fp, "carry = %d, accumulator = %d, pc = %d\n", (int) flags.cb, (int) registers.ac, (int) registers.pc);
 		++i;
 	}
 
 
-	printf("accumulator = %d, pc = %d\n", (int) registers.ac, (int) registers.pc);
+	printf("carry = %d, accumulator = %d, pc = %d\n", (int) flags.cb, (int) registers.ac, (int) registers.pc);
 	return 0;
 }
 
@@ -202,10 +212,39 @@ uint4_t fetchFromRegister(int reg) {
 	return value;
 }
 
+uint8_t fetchDouble(int reg) {
+	uint8_t ret_val;
+	switch (reg) {
+		case 0: ret_val = registers.r01; break;
+		case 1: ret_val = registers.r23; break;
+		case 2: ret_val = registers.r45; break;
+		case 3: ret_val = registers.r67; break;
+		case 4: ret_val = registers.r89; break;
+		case 5: ret_val = registers.r1011; break;
+		case 6: ret_val = registers.r1213; break;
+		case 7: ret_val = registers.r1415; break;
+	}
+	return ret_val;
+}
+
 void NOP(void) { return; }
+
 // Control flow instruction definitions
+void JCN(uint4_t condition) {
+	printf("%d\n", (int) condition);
+	return;
+}
+void JIN(uint4_t j_reg) {
+	uint12_t new_pc = registers.pc & 0xF00;
+	uint12_t jump_adr = (uint12_t) fetchDouble((int) j_reg);
+	registers.pc = new_pc | jump_adr;
+	return;
+}
 void JUN(void) {
 	registers.pc = i4001[registers.pc+1];
+	return;
+}
+void JMS(void) {
 	return;
 }
 
@@ -220,6 +259,9 @@ void CLC(void) {
 	return;
 }
 void IAC(void) {
+	if(registers.ac == 0xF) {
+		flags.cb = 1;
+	}
 	registers.ac += 1;
 	return;
 }
@@ -232,8 +274,21 @@ void CMA(void) {
 	registers.ac = ~(registers.ac);
 	return;
 }
-void RAL(void) { return; }
-void RAR(void) { return; }
+void RAL(void) {
+	uint8_t tmp_cb = flags.cb;
+	flags.cb = (uint8_t) (registers.ac & 0x8) >> 3;
+	uint4_t tmp_ac = registers.ac;
+	registers.ac = tmp_ac << 1;
+	registers.ac = registers.ac | tmp_cb;
+	return;
+}
+void RAR(void) {
+	uint8_t tmp_cb = (uint8_t) (registers.ac & 0x1);
+	uint4_t tmp_ac = registers.ac >> 1;
+	registers.ac = tmp_ac | (uint4_t) (flags.cb << 3);
+	flags.cb = tmp_cb;
+	return;
+}
 void TCC(void) {
 	registers.ac = (uint4_t) flags.cb;
 	flags.cb = 0;
@@ -243,11 +298,43 @@ void DAC(void) {
 	registers.ac -= 1;
 	return;
 }
-void TCS(void) { return; }
+void TCS(void) {
+	if (flags.cb == 0) {
+		registers.ac = 9;
+	} else if (flags.cb == 1) {
+		registers.ac = 10;
+	}
+	flags.cb = 0;
+	return;
+}
 void STC(void) {
 	flags.cb = 1;
 	return;
 }
-void DAA(void) { return; }
-void KBP(void) { return; }
+void DAA(void) {
+	uint8_t acc = (uint8_t) registers.ac;
+	uint8_t car = flags.cb;
+	if(car == 1 || acc > 9) {
+		acc += 6;
+	}
+	if(acc > 15) {
+		car = 1;
+		acc -= 15;
+	}
+	registers.ac = (uint4_t) acc;
+	flags.cb = car;
+	return;
+}
+void KBP(void) {
+	uint4_t acc = registers.ac;
+	switch (acc) {
+		case 0: acc = 0; break;
+		case 1: acc = 1; break;
+		case 2: acc = 2; break;
+		case 4: acc = 3; break;
+		case 8: acc = 4; break;
+		default: acc = 15; break;
+	}
+	return;
+}
 void DCL(void) { return; }
