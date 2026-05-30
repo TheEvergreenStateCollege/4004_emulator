@@ -8,14 +8,15 @@
 */
 
 typedef unsigned _BitInt(4) uint4_t;
+typedef unsigned _BitInt(2) uint2_t;
 typedef unsigned _BitInt(12) uint12_t;
 typedef struct i4004_flags {
 	uint8_t cb;
 } i4004_flags_t;
 typedef struct i4004_registers {
 	uint8_t r01, r23, r45, r67, r89, r1011, r1213, r1415;
-	uint12_t pc;
-	uint12_t s1, s2, s3;
+	uint2_t pc;
+	uint12_t stack[4];
 	uint4_t ac;
 } i4004_registers_t;
 
@@ -36,7 +37,8 @@ void NOP(void);
 void JCN(uint4_t condition);
 void JIN(uint4_t j_reg);
 void JUN(void);
-void JMS(void);
+void JMS(uint4_t opa);
+void BBL(uint4_t opa);
 
 // ROM and RAM instruction prototypes
 
@@ -125,40 +127,43 @@ int main(int argc, char *argv[]) {
 	i = 0;
 	uint8_t instruction;
 	uint4_t opr, opa;
+
 	
 	FILE *reg_fp = fopen("4004.regtrace", "w+");
 	while(i < atoi(argv[2])) {
-		instruction = i4001[registers.pc];
+		instruction = i4001[registers.stack[registers.pc]];
 		opr = (instruction & 0xF0) >> 4;
 		opa = (instruction & 0x0F);
 		switch (opr) {
-			case 0x0: NOP(); registers.pc += 1; break;
+			case 0x0: NOP(); registers.stack[registers.pc] += 1; break;
 			case 0x3: JIN(opa); break;
 			case 0x4: JUN(); break;
+			case 0x5: JMS(opa); break;
+			case 0xC: BBL(opa); break;
 			case 0xF:
 				switch (opa) {
-					case 0x0: CLB(); registers.pc += 1; break;
-					case 0x1: CLC(); registers.pc += 1; break;
-					case 0x2: IAC(); registers.pc += 1; break;
-					case 0x3: CMC(); registers.pc += 1; break;
-					case 0x4: CMA(); registers.pc += 1; break;
-					case 0x5: RAL(); registers.pc += 1; break;
-					case 0x6: RAR(); registers.pc += 1; break;
-					case 0x7: TCC(); registers.pc += 1; break;
-					case 0x8: DAC(); registers.pc += 1; break;
-					case 0x9: TCS(); registers.pc += 1; break;
-					case 0xA: STC(); registers.pc += 1; break;
-					case 0xB: DAA(); registers.pc += 1; break;
-					case 0xC: KBP(); registers.pc += 1; break;
-					case 0xD: DCL(); registers.pc += 1; break;
+					case 0x0: CLB(); registers.stack[registers.pc] += 1; break;
+					case 0x1: CLC(); registers.stack[registers.pc] += 1; break;
+					case 0x2: IAC(); registers.stack[registers.pc] += 1; break;
+					case 0x3: CMC(); registers.stack[registers.pc] += 1; break;
+					case 0x4: CMA(); registers.stack[registers.pc] += 1; break;
+					case 0x5: RAL(); registers.stack[registers.pc] += 1; break;
+					case 0x6: RAR(); registers.stack[registers.pc] += 1; break;
+					case 0x7: TCC(); registers.stack[registers.pc] += 1; break;
+					case 0x8: DAC(); registers.stack[registers.pc] += 1; break;
+					case 0x9: TCS(); registers.stack[registers.pc] += 1; break;
+					case 0xA: STC(); registers.stack[registers.pc] += 1; break;
+					case 0xB: DAA(); registers.stack[registers.pc] += 1; break;
+					case 0xC: KBP(); registers.stack[registers.pc] += 1; break;
+					case 0xD: DCL(); registers.stack[registers.pc] += 1; break;
 				} break;
 		}
-		fprintf(reg_fp, "carry = %d, accumulator = %d, pc = %d\n", (int) flags.cb, (int) registers.ac, (int) registers.pc);
+		fprintf(reg_fp, "carry = %d, accumulator = %d, pc = %d\n", (int) flags.cb, (int) registers.ac, (int) registers.stack[registers.pc]);
 		++i;
 	}
 
 
-	printf("carry = %d, accumulator = %d, pc = %d\n", (int) flags.cb, (int) registers.ac, (int) registers.pc);
+	printf("carry = %d, accumulator = %d, pc = %d\n", (int) flags.cb, (int) registers.ac, (int) registers.stack[registers.pc]);
 	return 0;
 }
 
@@ -235,16 +240,27 @@ void JCN(uint4_t condition) {
 	return;
 }
 void JIN(uint4_t j_reg) {
-	uint12_t new_pc = registers.pc & 0xF00;
+	uint12_t new_pc = registers.stack[registers.pc] & 0xF00;
 	uint12_t jump_adr = (uint12_t) fetchDouble((int) j_reg);
-	registers.pc = new_pc | jump_adr;
+	registers.stack[registers.pc] = new_pc | jump_adr;
 	return;
 }
 void JUN(void) {
-	registers.pc = i4001[registers.pc+1];
+	registers.stack[registers.pc] = i4001[registers.stack[registers.pc]+1];
 	return;
 }
-void JMS(void) {
+void JMS(uint4_t opa) {
+	(void) opa;
+
+	registers.stack[registers.pc+1] = i4001[registers.stack[registers.pc]+1];
+	registers.stack[registers.pc] += 2;
+	registers.pc += 1;
+
+	return;
+}
+void BBL(uint4_t opa) {
+	registers.pc -= 1;
+	registers.ac = opa;
 	return;
 }
 
@@ -295,6 +311,9 @@ void TCC(void) {
 	return;
 }
 void DAC(void) {
+	if(registers.ac > 0) {
+		flags.cb = 1;
+	}
 	registers.ac -= 1;
 	return;
 }
