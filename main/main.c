@@ -3,15 +3,15 @@
 #include <stdint.h>
 
 /* TODO
- * Functions for instructions
- * Add remaining registers
 */
 
-typedef unsigned _BitInt(4) uint4_t;
 typedef unsigned _BitInt(2) uint2_t;
+typedef unsigned _BitInt(4) uint4_t;
 typedef unsigned _BitInt(12) uint12_t;
 typedef struct i4004_flags {
 	uint8_t cb;
+	uint8_t test;
+	uint8_t select;
 } i4004_flags_t;
 typedef struct i4004_registers {
 	uint8_t r01, r23, r45, r67, r89, r1011, r1213, r1415;
@@ -27,20 +27,48 @@ uint8_t i4001[256];
 uint4_t i4002[20];
 
 //Memory operation function prototypes
-void insertInRegister(uint4_t value, uint8_t reg);
+void insertInRegister(uint4_t value, int reg);
 uint4_t fetchFromRegister(int reg);
 uint8_t fetchDouble(int reg);
+void insertDoubel(uint8_t val, int reg);
 
 //Instruction function prototypes
 void NOP(void);
+void LDM(uint4_t opa);
+void LD(uint4_t opa);
+void XCH(uint4_t opa);
+void ADD(uint4_t opa);
+void SUB(uint4_t opa);
+void INC(uint4_t opa);
+
 // Control flow instruction prototypes
 void JCN(uint4_t condition);
 void JIN(uint4_t j_reg);
 void JUN(void);
 void JMS(uint4_t opa);
 void BBL(uint4_t opa);
+void ISZ(uint4_t opa);
 
 // ROM and RAM instruction prototypes
+void FIM(uint4_t opa);
+void FIN(uint4_t opa);
+void SRC(uint4_t opa);
+void WRM(void);
+void WMP(void); // IO
+void WRR(void); // IO
+void WPM(void); // N/A for setup
+void WR0(void);
+void WR1(void);
+void WR2(void);
+void WR3(void);
+void SBM(void);
+void RDM(void);
+void RDR(void); // IO
+void ADM(void);
+void RD0(void);
+void RD1(void);
+void RD2(void);
+void RD3(void);
 
 // Fx instruction prototypes
 void CLB(void);
@@ -136,10 +164,46 @@ int main(int argc, char *argv[]) {
 		opa = (instruction & 0x0F);
 		switch (opr) {
 			case 0x0: NOP(); registers.stack[registers.pc] += 1; break;
-			case 0x3: JIN(opa); break;
+			case 0x1: JCN(opa); break;
+			case 0x2:
+				switch ((opa & 0x1)) {
+					case 0x0: FIM(opa); registers.stack[registers.pc] += 2; break;
+					case 0x1: SRC(opa); registers.stack[registers.pc] += 1; break;
+				}
+			case 0x3:
+				switch ((opa & 0x1)) {
+					case 0x0: FIN(opa); registers.stack[registers.pc] += 1; break;
+					case 0x1: JIN(opa); break;
+				}
 			case 0x4: JUN(); break;
 			case 0x5: JMS(opa); break;
+			case 0x6: INC(opa); registers.stack[registers.pc] += 1; break;
+			case 0x7: ISZ(opa); break;
+			case 0x8: ADD(opa); registers.stack[registers.pc] += 1; break;
+			case 0x9: SUB(opa); registers.stack[registers.pc] += 1; break;
+			case 0xA: LD(opa); registers.stack[registers.pc] += 1; break;
+			case 0xB: XCH(opa); registers.stack[registers.pc] += 1; break;
 			case 0xC: BBL(opa); break;
+			case 0xD: LDM(opa); registers.stack[registers.pc] += 1; break;
+			case 0xE:
+				switch (opa) {
+					case 0x0: WRM(); registers.stack[registers.pc] += 1; break;
+					case 0x1: WMP(); registers.stack[registers.pc] += 1; break;
+					case 0x2: WRR(); registers.stack[registers.pc] += 1; break;
+					case 0x3: WPM(); registers.stack[registers.pc] += 1; break;
+					case 0x4: WR0(); registers.stack[registers.pc] += 1; break;
+					case 0x5: WR1(); registers.stack[registers.pc] += 1; break;
+					case 0x6: WR2(); registers.stack[registers.pc] += 1; break;
+					case 0x7: WR3(); registers.stack[registers.pc] += 1; break;
+					case 0x8: SBM(); registers.stack[registers.pc] += 1; break;
+					case 0x9: RDM(); registers.stack[registers.pc] += 1; break;
+					case 0xA: RDR(); registers.stack[registers.pc] += 1; break;
+					case 0xB: ADM(); registers.stack[registers.pc] += 1; break;
+					case 0xC: RD0(); registers.stack[registers.pc] += 1; break;
+					case 0xD: RD1(); registers.stack[registers.pc] += 1; break;
+					case 0xE: RD2(); registers.stack[registers.pc] += 1; break;
+					case 0xF: RD3(); registers.stack[registers.pc] += 1; break;
+				}
 			case 0xF:
 				switch (opa) {
 					case 0x0: CLB(); registers.stack[registers.pc] += 1; break;
@@ -168,7 +232,7 @@ int main(int argc, char *argv[]) {
 }
 
 
-void insertInRegister(uint4_t value, uint8_t reg) {
+void insertInRegister(uint4_t value, int reg) {
 	uint8_t lr = 0;
 	uint8_t ur = 0;
 	switch (reg) {
@@ -232,16 +296,114 @@ uint8_t fetchDouble(int reg) {
 	return ret_val;
 }
 
+void insertDouble(uint8_t val, int reg) {
+	switch (reg) {
+		case 0: registers.r01 = val; break;
+		case 1: registers.r23 = val; break;
+		case 2: registers.r45 = val; break;
+		case 3: registers.r67 = val; break;
+		case 4: registers.r89 = val; break;
+		case 5: registers.r1011 = val; break;
+		case 6: registers.r1213 = val; break;
+		case 7: registers.r1415 = val; break;
+	}
+	return;
+}
+
+// Instruction definitions
 void NOP(void) { return; }
+void LDM(uint4_t opa) {
+	registers.ac = opa;
+	return;
+}
+void LD(uint4_t opa) {
+	registers.ac = fetchFromRegister((int) opa);
+	return;
+}
+void XCH(uint4_t opa) {
+	uint4_t buf = registers.ac;
+	registers.ac = fetchFromRegister((int) opa);
+	insertInRegister(buf, (int) opa);
+	return;
+}
+void ADD(uint4_t opa) {
+	uint4_t reg_val = fetchFromRegister((int) opa);
+	uint4_t test_ac = registers.ac;
+	registers.ac = registers.ac + reg_val + (uint4_t) (flags.cb & 0x1);
+
+	int test = (int) reg_val + (int) test_ac + (int) (flags.cb & 0x1);
+	if (test > 15) {
+		flags.cb = 1;
+	} else {
+		flags.cb = 0;
+	}
+
+	return;
+}
+void SUB(uint4_t opa) {
+	uint4_t reg_val = (fetchFromRegister((int) opa));
+	uint4_t test_ac = registers.ac;
+	registers.ac = registers.ac - (reg_val + (uint4_t) (flags.cb & 0x1));
+
+	int test = (int) test_ac - ((int) reg_val + (int) (flags.cb & 0x1));
+	if (test >= 0) {
+		flags.cb = 1;
+	} else {
+		flags.cb = 0;
+	}
+
+	return;
+}
+void INC(uint4_t opa) {
+	uint4_t reg = fetchFromRegister((int) opa);
+	reg = reg + 1;
+	insertInRegister(reg, (int) opa);
+	return;
+}
+
 
 // Control flow instruction definitions
 void JCN(uint4_t condition) {
-	printf("%d\n", (int) condition);
+	uint4_t fcn1, fcn2, fcn3, fcn4;
+	uint8_t jump = 0;
+	fcn4 = condition & 0x1;
+	fcn3 = (condition & 0x2) >> 1;
+	fcn2 = (condition & 0x4) >> 2;
+	fcn1 = (condition & 0x8) >> 3;
+
+	if ( fcn1 == 0 ) {
+		if (fcn2 == 1 && registers.ac == 0) {
+			jump = 1;
+		}
+		if (fcn3 == 1 && flags.cb == 1) {
+			jump = 1;
+		}
+		if (fcn4 == 1 && flags.test == 0) {
+			jump = 1;
+		}
+	} else if (fcn1 == 1) {
+		if (fcn2 == 1 && registers.ac != 0) {
+			jump = 1;
+		}
+		if (fcn3 == 1 && flags.cb == 0) {
+			jump = 1;
+		}
+		if (fcn4 == 1 && flags.test != 0) {
+			jump = 1;
+		}
+	}
+
+	if (jump) {
+		registers.stack[registers.pc] = (uint12_t) i4001[registers.stack[registers.pc]+1];
+	} else {
+		registers.stack[registers.pc] += 2;
+	}
+
 	return;
 }
 void JIN(uint4_t j_reg) {
 	uint12_t new_pc = registers.stack[registers.pc] & 0xF00;
-	uint12_t jump_adr = (uint12_t) fetchDouble((int) j_reg);
+	uint12_t jump_adr = (uint12_t) fetchDouble((int) (j_reg >> 1));
 	registers.stack[registers.pc] = new_pc | jump_adr;
 	return;
 }
@@ -263,6 +425,104 @@ void BBL(uint4_t opa) {
 	registers.ac = opa;
 	return;
 }
+void ISZ(uint4_t opa) {
+	uint4_t ireg = fetchFromRegister((int) opa);
+	ireg += 1;
+	if (ireg == 0) {
+		registers.stack[registers.pc] += 2;
+	} else if (ireg != 0) {
+		registers.stack[registers.pc] = i4001[registers.stack[registers.pc]+1];
+	}
+	insertInRegister(ireg, (int) opa);
+
+	return;
+}
+
+// ROM and RAM instruction definitions
+void FIM(uint4_t opa) {
+	insertDouble((uint8_t) i4001[registers.stack[registers.pc]+1], (int) (opa >> 1));
+	return;
+}
+void FIN(uint4_t opa) {
+	insertDouble((uint8_t) i4001[registers.r01], (int) (opa >> 1));
+	return;
+}
+void SRC(uint4_t opa) {
+	flags.select = (fetchDouble((int) opa) & 0x0F);
+	return;
+}
+void WRM(void) {
+	i4002[flags.select] = registers.ac;
+	return;
+}
+void WMP(void) { return; } // IO
+void WRR(void) { return; } // IO
+void WPM(void) { return; } // N/A for setup
+void WR0(void) {
+	i4002[0+16] = registers.ac;
+	return;
+}
+void WR1(void) {
+	i4002[1+16] = registers.ac;
+	return;
+}
+void WR2(void) {
+	i4002[2+16] = registers.ac;
+	return;
+}
+void WR3(void) {
+	i4002[3+16] = registers.ac;
+	return;
+}
+void SBM(void) { 
+	uint4_t sub_val = i4002[flags.select];
+	uint4_t test_ac = registers.ac;
+	registers.ac = registers.ac - (sub_val + (uint4_t) (flags.cb & 0x1));
+
+	int test = (int) test_ac - ((int) sub_val + (int) (flags.cb & 0x1));
+	if (test >= 0) {
+		flags.cb = 1;
+	} else {
+		flags.cb = 0;
+	}
+	return;
+}
+void RDM(void) {
+	registers.ac = i4002[flags.select];
+	return;
+}
+void RDR(void) { return; } // IO
+void ADM(void) {
+	uint4_t add_val = i4002[flags.select];
+	uint4_t test_ac = registers.ac;
+	registers.ac = registers.ac + add_val + (uint4_t) (flags.cb & 0x1);
+
+	int test = (int) add_val + (int) test_ac + (int) (flags.cb & 0x1);
+	if (test > 15) {
+		flags.cb = 1;
+	} else {
+		flags.cb = 0;
+	}
+
+	return;
+}
+void RD0(void) {
+	registers.ac = i4002[0+16];
+	return;
+}
+void RD1(void) {
+	registers.ac = i4002[1+16];
+	return;
+}
+void RD2(void) {
+	registers.ac = i4002[2+16];
+	return;
+}
+void RD3(void) {
+	registers.ac = i4002[3+16];
+	return;
+}
+
 
 // Fx instruction definitions
 void CLB(void) {
