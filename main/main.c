@@ -158,6 +158,7 @@ int main(int argc, char *argv[]) {
 
 	
 	FILE *reg_fp = fopen("4004.regtrace", "w+");
+	FILE *ram_fp = fopen("4004.ramtrace", "w+");
 	while(i < atoi(argv[2])) {
 		instruction = i4001[registers.stack[registers.pc]];
 		opr = (instruction & 0xF0) >> 4;
@@ -166,15 +167,17 @@ int main(int argc, char *argv[]) {
 			case 0x0: NOP(); registers.stack[registers.pc] += 1; break;
 			case 0x1: JCN(opa); break;
 			case 0x2:
-				switch ((opa & 0x1)) {
+				uint4_t test_2 = opa & 0x1;
+				switch (test_2) {
 					case 0x0: FIM(opa); registers.stack[registers.pc] += 2; break;
 					case 0x1: SRC(opa); registers.stack[registers.pc] += 1; break;
-				}
+				} break;
 			case 0x3:
-				switch ((opa & 0x1)) {
+				uint4_t test_3 = opa & 0x1;
+				switch (test_3) {
 					case 0x0: FIN(opa); registers.stack[registers.pc] += 1; break;
 					case 0x1: JIN(opa); break;
-				}
+				} break;
 			case 0x4: JUN(); break;
 			case 0x5: JMS(opa); break;
 			case 0x6: INC(opa); registers.stack[registers.pc] += 1; break;
@@ -203,7 +206,7 @@ int main(int argc, char *argv[]) {
 					case 0xD: RD1(); registers.stack[registers.pc] += 1; break;
 					case 0xE: RD2(); registers.stack[registers.pc] += 1; break;
 					case 0xF: RD3(); registers.stack[registers.pc] += 1; break;
-				}
+				} break;
 			case 0xF:
 				switch (opa) {
 					case 0x0: CLB(); registers.stack[registers.pc] += 1; break;
@@ -222,6 +225,15 @@ int main(int argc, char *argv[]) {
 					case 0xD: DCL(); registers.stack[registers.pc] += 1; break;
 				} break;
 		}
+		fprintf(ram_fp, "Words: ");
+		for (int r = 0; r < 16; r++) {
+			fprintf(ram_fp, "%d ", (int) i4002[r]);
+		}
+		fprintf(ram_fp, "    Status: ");
+		for (int r = 16; r < 20; r++) {
+			fprintf(ram_fp, "%d ", (int) i4002[r]);
+		}
+		fprintf(ram_fp, "\n");
 		fprintf(reg_fp, "carry = %d, accumulator = %d, pc = %d\n", (int) flags.cb, (int) registers.ac, (int) registers.stack[registers.pc]);
 		++i;
 	}
@@ -259,7 +271,6 @@ void insertInRegister(uint4_t value, int reg) {
 
 uint4_t fetchFromRegister(int reg) {
 	uint4_t value = 0;
-	printf("%d\n", reg);
 	switch (reg) {
 		case 0: value = (uint4_t) ((registers.r01 & 0xF0) >> 4); break;
 		case 1: value = (uint4_t) (registers.r01 & 0x0F); break;
